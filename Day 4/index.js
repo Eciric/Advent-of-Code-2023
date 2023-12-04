@@ -3,11 +3,11 @@ const fs = require("fs");
 fs.readFile("data.txt", "utf-8", (_, data) => {
 	data = data.trim().split("\r\n");
 	let ans = 0;
-	const cardsOfType = data.map((_, i) => 1);
+	const cardsOfType = data.map(() => 1);
 
-	for (const [i, line] of data.entries()) {
+	data.forEach((line, i) => {
 		cardsOfType[i] += 1;
-		let [winningNumbers, scratchNumbers] = line
+		const [winningNumbers, scratchNumbers] = line
 			.split(":")[1]
 			.trim()
 			.split("|")
@@ -15,7 +15,7 @@ fs.readFile("data.txt", "utf-8", (_, data) => {
 				el
 					.trim()
 					.split(" ")
-					.filter((num) => num != "")
+					.filter((num) => num !== "")
 					.map(Number)
 			);
 
@@ -24,13 +24,11 @@ fs.readFile("data.txt", "utf-8", (_, data) => {
 		);
 		if (cross.length) {
 			ans += 2 ** (cross.length - 1);
-			for (let j = 0; j < cross.length; j++) {
+			cross.forEach((_, j) => {
 				cardsOfType[i + 1 + j] += cardsOfType[i];
-			}
+			});
 		}
-	}
-	console.log(
-		ans,
-		Object.values(cardsOfType).reduce((prev, cur) => prev + cur, 0) / 2
-	);
+	});
+
+	console.log(ans, cardsOfType.reduce((prev, cur) => prev + cur, 0) / 2);
 });
