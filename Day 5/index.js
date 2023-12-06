@@ -12,24 +12,39 @@ fs.readFile("data.txt", "utf-8", (_, almanac) => {
 	almanac.splice(0, 2);
 	const maps = createMaps(almanac);
 	let currentlyLowestValue = 0;
-	const parsedSeeds = [];
-	for (const seed of seeds) {
-		let currentMappedValue = seed;
-		for (const map of maps) {
-			for (const { destinationCat, sourceCat, ranges } of map.mappings) {
-				if (
-					currentMappedValue >= sourceCat &&
-					currentMappedValue < sourceCat + ranges
-				) {
-					currentMappedValue =
-						destinationCat + currentMappedValue - sourceCat;
-					break;
+	const newSeedRanges = [];
+	for (let i = 0; i < seeds.length - 1; i += 2) {
+		newSeedRanges.push([seeds[i], seeds[i] + seeds[i + 1]]);
+	}
+
+	let lowestSeedValue = Number.POSITIVE_INFINITY;
+	for (const [seedRangeIndex, seedRange] of newSeedRanges.entries()) {
+		console.log("Current seed range: ", seedRangeIndex);
+		for (let seed = seedRange[0]; seed < seedRange[1]; seed++) {
+			console.log("Current seed: ", seed);
+			let currentMappedValue = seed;
+			for (const map of maps) {
+				for (const {
+					destinationCat,
+					sourceCat,
+					ranges,
+				} of map.mappings) {
+					if (
+						currentMappedValue >= sourceCat &&
+						currentMappedValue < sourceCat + ranges
+					) {
+						currentMappedValue =
+							destinationCat + currentMappedValue - sourceCat;
+						break;
+					}
 				}
 			}
+			if (currentMappedValue < lowestSeedValue) {
+				lowestSeedValue = currentMappedValue;
+			}
 		}
-		parsedSeeds.push(currentMappedValue);
 	}
-	console.log(Math.min(...parsedSeeds));
+	console.log(lowestSeedValue);
 });
 
 const createMaps = (almanac) => {
