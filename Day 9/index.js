@@ -1,5 +1,8 @@
 const fs = require("fs");
 
+// "one" || "two"
+const part = "one";
+
 fs.readFile("data.txt", "utf-8", (_, data) => {
 	solve(
 		data.split("\r\n").map((row) =>
@@ -12,11 +15,6 @@ fs.readFile("data.txt", "utf-8", (_, data) => {
 });
 
 const solve = (data) => {
-	partOne(data);
-	partTwo(data);
-};
-
-const partOne = (data) => {
 	const map = parseMap(data);
 
 	for (const line of Object.entries(map)) {
@@ -24,12 +22,18 @@ const partOne = (data) => {
 		const histories = line[1];
 		histories.unshift(dataset.map(Number));
 		for (let i = histories.length - 1; i >= 0; i--) {
+			if (part === "two") {
+				histories[i] = histories[i].reverse();
+			}
 			let elementToPush = 0;
 			if (i !== histories.length - 1) {
 				let bottomElement =
 					histories[i + 1][histories[i + 1].length - 1];
 				let leftElement = histories[i][histories[i].length - 1];
-				elementToPush = Number(bottomElement) + Number(leftElement);
+				elementToPush =
+					part === "one"
+						? Number(bottomElement) + Number(leftElement)
+						: Number(leftElement) - Number(bottomElement);
 			} else {
 				elementToPush = histories[i][histories[i].length - 1];
 			}
@@ -53,31 +57,6 @@ const areAllValuesZero = (arr) => {
 		}
 	}
 	return flag;
-};
-
-const partTwo = (data) => {
-	const map = parseMap(data);
-	for (const line of Object.entries(map)) {
-		const dataset = line[0].split(",");
-		const histories = line[1];
-		histories.unshift(dataset.map(Number));
-		for (let i = histories.length - 1; i >= 0; i--) {
-			let elementToPush = 0;
-			if (i !== histories.length - 1) {
-				let bottomElement = histories[i + 1][0];
-				let leftElement = histories[i][0];
-				elementToPush = Number(leftElement) - Number(bottomElement);
-			} else {
-				elementToPush = histories[i][histories[i].length - 1];
-			}
-			histories[i].unshift(elementToPush);
-		}
-	}
-	let sum = 0;
-	for (const line of Object.entries(map)) {
-		sum += line[1][0].at(0);
-	}
-	console.log(sum);
 };
 
 const parseMap = (data) => {
