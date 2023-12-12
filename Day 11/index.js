@@ -1,17 +1,9 @@
 const fs = require("fs");
-const offset = 10;
-let dist_offset = 0;
+
 const solve = (data) => {
 	let emptyRows = getEmptyRows(data);
 	let emptyColumns = getEmptyColumns(data);
-	console.log(emptyRows, emptyColumns);
-	dist_offset = (emptyRows.length + emptyColumns.length) * offset;
-	// for (const row of data) {
-	// 	process.stdout.write(row + "\n");
-	// }
-
 	const galaxies = getGalaxies(data);
-
 	const distances = getDistances(galaxies, emptyRows, emptyColumns);
 	console.log(
 		distances.reduce((acc, cur) => {
@@ -78,25 +70,6 @@ const getGalaxies = (data) => {
 		}
 	}
 	return galaxies;
-};
-
-const addEmptyRows = (data, emptyRowsIndexes) => {
-	for (const emptyRowsIndex of emptyRowsIndexes.reverse()) {
-		const rowToDuplicate = data[emptyRowsIndex];
-		console.log(emptyRowsIndex, rowToDuplicate);
-		data.splice(emptyRowsIndex, 0, rowToDuplicate);
-	}
-};
-
-const addEmptyCols = (data, emptyColsIndexes) => {
-	for (let [index, row] of data.entries()) {
-		for (let i = row.length - 1; i >= 0; i--) {
-			if (emptyColsIndexes.includes(i)) {
-				row = row.substring(0, i) + "." + row.substring(i, row.length);
-				data[index] = row;
-			}
-		}
-	}
 };
 
 const getEmptyRows = (data) => {
