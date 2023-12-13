@@ -1,20 +1,33 @@
 const fs = require("fs");
 
 fs.readFile("data.txt", "utf-8", (_, data) => {
-	data = data.split("\r\n");
+	data = data.split("\r\n").map((row) => {
+		let [springs, sections] = row.split(" ");
+		springs = new Array(5)
+			.fill()
+			.map(() => springs)
+			.join("?");
+		sections = new Array(5)
+			.fill()
+			.map(() => sections)
+			.join(",");
+		return springs + " " + sections;
+	});
 	const parsedData = [];
 	for (const row of data) {
 		const [springs, sections] = row.split(" ");
 		parsedData.push({ springs, sections: sections.split(",").map(Number) });
 	}
+
 	let totalArrangements = 0;
-	for (const row of parsedData) {
+	for (const [i, row] of parsedData.entries()) {
 		let currentIndex = 0;
 		let arrangements = {
 			count: 0,
 		};
 		parseLine(row.springs, currentIndex, row.sections, arrangements);
 		totalArrangements += arrangements.count;
+		console.log("Completed row: ", i);
 	}
 	console.log(totalArrangements);
 });
