@@ -20,11 +20,6 @@ const partTwo = (data) => {
 		cycle(data);
 	}
 	calculateLoad(data);
-	fs.writeFile(
-		"output.txt",
-		JSON.stringify(data.map((row) => row.join(""))),
-		() => {}
-	);
 };
 
 const cycle = (data) => {
