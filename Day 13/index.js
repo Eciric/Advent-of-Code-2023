@@ -6,6 +6,14 @@ fs.readFile("data.txt", "utf-8", (_, data) => {
 
 const solve = (data) => {
 	const patterns = parseData(data);
+	// partOne(patterns);
+	partTwo(patterns);
+};
+
+const partTwo = (patterns) => {
+	let total = 0;
+	for (const [index, pattern] of patterns.entries()) {
+	}
 };
 
 const partOne = (patterns) => {
