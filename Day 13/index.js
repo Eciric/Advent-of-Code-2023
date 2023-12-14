@@ -7,13 +7,48 @@ fs.readFile("data.txt", "utf-8", (_, data) => {
 const solve = (data) => {
 	const patterns = parseData(data);
 	partOne(patterns);
-	partTwo(patterns);
+	partTwo(patterns); // Answer too big, return to this later
 };
 
 const partTwo = (patterns) => {
 	let total = 0;
-	for (const pattern of patterns) {
+	let index = 0;
+	for (let pattern of patterns) {
+		const [perfectHorizontal, perfectVertical] = calculatePerfects(pattern);
+		let pHorizontal = undefined;
+		let pVertical = undefined;
+		let smudgeFound = false;
+		for (let i = 0; i < pattern.length; i++) {
+			if (smudgeFound) break;
+			for (let j = 0; j < pattern[i].length; j++) {
+				let patternCopy = structuredClone(pattern);
+				if (patternCopy[i][j] == ".") patternCopy[i][j] = "#";
+				else patternCopy[i][j] = ".";
+				const [newPerfectHorizontal, newPerfectVertical] =
+					calculatePerfects(patternCopy);
+				if (
+					validateNewMirrors(
+						perfectHorizontal,
+						newPerfectHorizontal
+					) ||
+					validateNewMirrors(perfectVertical, newPerfectVertical)
+				) {
+					console.log(index, i, j);
+					smudgeFound = true;
+					pHorizontal = newPerfectHorizontal;
+					pVertical = newPerfectVertical;
+					break;
+				}
+			}
+		}
+		if (pHorizontal) {
+			total += pHorizontal.lineTwo * 100;
+		} else if (pVertical) {
+			total += pVertical.lineTwo;
+		}
+		index++;
 	}
+	console.log(total);
 };
 
 const partOne = (patterns) => {
@@ -22,8 +57,14 @@ const partOne = (patterns) => {
 		const horizontals = getHorizontals(pattern);
 		const verticals = getVerticals(pattern);
 
+		console.log(`Horizontals: `, horizontals);
+		console.log(`Verticals: `, verticals);
+
 		const perfectHorizontal = getHorizontalMirror(horizontals, pattern);
 		const perfectVertical = getVerticalMirror(verticals, pattern);
+
+		console.log(`Perfect horizontals: `, perfectHorizontal);
+		console.log(`Perfect verticals: `, perfectVertical);
 
 		if (perfectHorizontal) {
 			total += perfectHorizontal.lineTwo * 100;
@@ -32,6 +73,22 @@ const partOne = (patterns) => {
 		}
 	}
 	console.log(total);
+};
+
+const calculatePerfects = (pattern) => {
+	const horizontals = getHorizontals(pattern);
+	const verticals = getVerticals(pattern);
+
+	// console.log(`Horizontals: `, horizontals);
+	// console.log(`Verticals: `, verticals);
+
+	const perfectHorizontal = getHorizontalMirror(horizontals, pattern);
+	const perfectVertical = getVerticalMirror(verticals, pattern);
+
+	// console.log(`Perfect horizontals: `, perfectHorizontal);
+	// console.log(`Perfect verticals: `, perfectVertical);
+
+	return [perfectHorizontal, perfectVertical];
 };
 
 const getHorizontals = (pattern) => {
@@ -126,4 +183,20 @@ const parseData = (data) => {
 		}
 	}
 	return patterns;
+};
+
+const validateNewMirrors = (perfectMirror, newPerfectMirror) => {
+	if (newPerfectMirror != undefined) {
+		if (perfectMirror == undefined) {
+			return true;
+		} else {
+			if (
+				perfectMirror.lineOne != newPerfectMirror.lineOne &&
+				perfectMirror.lineTwo != newPerfectMirror.lineTwo
+			) {
+				return true;
+			}
+		}
+	}
+	return false;
 };
