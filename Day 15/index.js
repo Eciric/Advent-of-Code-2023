@@ -34,15 +34,20 @@ const solve = (data) => {
 			}
 		}
 	}
-	let focusingPower = 0;
-	for (const [boxIndex, box] of boxes.entries()) {
-		if (!box.length) continue;
-		for (const [lenseIndex, lense] of box.entries()) {
-			focusingPower +=
-				(1 + boxIndex) * (lenseIndex + 1) * Number(lense.focalLength);
-		}
-	}
-	console.log(focusingPower);
+	console.log(
+		boxes.reduce(
+			(focusingPower, box, boxIndex) =>
+				(focusingPower += box.reduce(
+					(acc, lense, lenseIndex) =>
+						(acc +=
+							(1 + boxIndex) *
+							(lenseIndex + 1) *
+							+lense.focalLength),
+					0
+				)),
+			0
+		)
+	);
 };
 
 const calculate = (lenses) => {
