@@ -49,6 +49,8 @@ const part1 = (workflows, workflow, part) => {
 						acceptedParts += +n;
 					}
 					break;
+				} else if (newWorkflow == "R") {
+					break;
 				}
 			}
 		} else if (smallerThan > -1) {
@@ -74,6 +76,8 @@ const part1 = (workflows, workflow, part) => {
 						acceptedParts += +n;
 					}
 					break;
+				} else if (newWorkflow == "R") {
+					break;
 				}
 			}
 		} else {
@@ -88,6 +92,8 @@ const part1 = (workflows, workflow, part) => {
 			if (workflows[rule]) {
 				console.log("Rule transfers to a new workflow: ", rule, part);
 				part1(workflows, workflows[rule], part);
+				break;
+			} else if (rule == "R") {
 				break;
 			}
 		}
