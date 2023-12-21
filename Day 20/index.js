@@ -3,139 +3,37 @@ const fs = require("fs");
 fs.readFile("data.txt", "utf-8", (_, data) => {
 	data = data.split("\r\n");
 	const modules = getModules(data);
-	const buttonPresses = 1000;
+	const buttonPresses = 10000;
 	let lowSignalsSent = 0;
 	let highSignalsSent = 0;
+	let pulses = [];
 	for (let i = 0; i < buttonPresses; i++) {
-		console.log("----------------------------");
 		let signalQueue = [
-			{ signalType: "low", sender: "button", recipient: modules[10] },
+			{
+				sender: "button",
+				signal: false,
+				recipient: modules.find(
+					(module) => module.type == "broadcaster"
+				),
+			},
 		];
-		lowSignalsSent++;
 		while (signalQueue.length) {
-			let { signalType, sender, recipient } = signalQueue.shift();
-			let samePrioritySignals = signalQueue.filter(
-				(sig) => sig.sender == sender
-			);
-			samePrioritySignals.unshift({ signalType, sender, recipient });
-			let newStartIndex = samePrioritySignals.length;
-			signalQueue = signalQueue.slice(
-				newStartIndex - 1,
-				signalQueue.length
-			);
+			let { sender, signal, recipient } = signalQueue.shift();
+			signal ? (highSignalsSent += 1) : (lowSignalsSent += 1);
 
-			for (const {
-				signalType,
-				sender,
-				recipient,
-			} of samePrioritySignals) {
-				if (recipient == undefined) {
-					console.log(
-						sender,
-						`-${signalType}->`,
-						"module doesnt exist"
-					);
-					signalType == "low"
-						? (lowSignalsSent += 1)
-						: (highSignalsSent += 1);
-					continue;
-				}
-				console.log(sender, `-${signalType}->`, recipient.name);
-
-				if (recipient.type == "broadcaster") {
-					for (const destModule of recipient.destModules) {
-						signalQueue.push({
-							signalType,
-							sender: recipient.name,
-							recipient: modules.find(
-								(module) => module.name == destModule
-							),
-						});
-						signalType == "low"
-							? (lowSignalsSent += 1)
-							: (highSignalsSent += 1);
-					}
-				} else if (recipient.type == "flip-flop") {
-					if (signalType == "high") continue;
-					else if (signalType == "low") {
-						let newStatus =
-							recipient.status == "off" ? "on" : "off";
-						let newSignal =
-							recipient.status == "off" ? "high" : "low";
-						modules[
-							modules.findIndex(
-								(module) => module.name == recipient.name
-							)
-						].status = newStatus;
-						for (const destModule of recipient.destModules) {
-							signalQueue.push({
-								signalType: newSignal,
-								sender: recipient.name,
-								recipient: modules.find(
-									(module) => module.name == destModule
-								),
-							});
-							newSignal == "low"
-								? (lowSignalsSent += 1)
-								: (highSignalsSent += 1);
-						}
-					}
-				} else if (recipient.type == "conjunction") {
-					if (recipient.inputs.length == 1) {
-						let newSignal = signalType == "low" ? "high" : "low";
-						for (const destModule of recipient.destModules) {
-							signalQueue.push({
-								signalType: newSignal,
-								sender: recipient.name,
-								recipient: modules.find(
-									(module) => module.name == destModule
-								),
-							});
-							newSignal == "low"
-								? (lowSignalsSent += 1)
-								: (highSignalsSent += 1);
-						}
-						recipient.inputs[0].lastSignal = signalType;
-					} else {
-						for (let input of recipient.inputs) {
-							if (input.name == sender) {
-								input.lastSignal = signalType;
-							}
-						}
-
-						if (allInputsHigh(recipient.inputs)) {
-							for (const destModule of recipient.destModules) {
-								signalQueue.push({
-									signalType: "low",
-									sender: recipient.name,
-									recipient: modules.find(
-										(module) => module.name == destModule
-									),
-								});
-								lowSignalsSent++;
-							}
-						} else {
-							for (const destModule of recipient.destModules) {
-								signalQueue.push({
-									signalType: "high",
-									sender: recipient.name,
-									recipient: modules.find(
-										(module) => module.name == destModule
-									),
-								});
-								highSignalsSent++;
-							}
-						}
-					}
+			if (!recipient) {
+				continue;
+			}
+			if (["fh", "dd", "xp", "fc"].includes(recipient.name) && !signal) {
+				if (pulses.length < 4) {
+					pulses.push(i + 1);
 				}
 			}
+			recipient.pulse(signalQueue, sender, signal);
 		}
 	}
-	console.log(
-		lowSignalsSent,
-		highSignalsSent,
-		lowSignalsSent * highSignalsSent
-	);
+	console.log(lowSignalsSent * highSignalsSent);
+	console.log(LCM(pulses));
 });
 
 const getModules = (data) => {
@@ -151,31 +49,80 @@ const getModules = (data) => {
 					: row[0] == "%"
 					? "flip-flop"
 					: "conjunction",
-			destModules: row
+			outputs: row
 				.split(" -> ")[1]
 				.split(",")
 				.map((a) => a.trim()),
+			pulse: function (queue, sender, signal) {
+				if (this.type == "broadcaster") {
+					this.outputs.forEach((output) => {
+						queue.push({
+							sender: this,
+							signal,
+							recipient: modules.find(
+								(mod) => mod.name == output
+							),
+						});
+					});
+				} else if (this.type == "flip-flop") {
+					if (!signal) {
+						this.status = !this.status;
+						this.outputs.forEach((output) => {
+							queue.push({
+								sender: this,
+								signal: this.status,
+								recipient: modules.find(
+									(mod) => mod.name == output
+								),
+							});
+						});
+					}
+				} else if (this.type == "conjunction") {
+					this.inputs = this.inputs.map((input) => {
+						if (input.name == sender.name) {
+							input.lastSignal = signal;
+						}
+						return input;
+					});
+					let newSignal = !this.inputs.every(
+						(input) => input.lastSignal
+					);
+					this.outputs.forEach((output) => {
+						queue.push({
+							sender: this,
+							signal: newSignal,
+							recipient: modules.find(
+								(mod) => mod.name == output
+							),
+						});
+					});
+				}
+			},
 		};
-		if (module.type == "flip-flop") {
-			module["status"] = "off";
-		}
+		if (module.type == "flip-flop") module["status"] = false;
 		modules.push(module);
 	}
 	for (let module of modules) {
+		let inputs = modules.filter((mod) => mod.outputs.includes(module.name));
 		if (module.type == "conjunction") {
-			let inputs = modules.filter((mod) =>
-				mod.destModules.includes(module.name)
-			);
-			inputs = inputs.map((input) => ({ ...input, lastSignal: "low" }));
-			module["inputs"] = inputs;
+			inputs = inputs.map((input) => ({ ...input, lastSignal: false }));
 		}
+		module["inputs"] = inputs;
 	}
 	return modules;
 };
 
-const allInputsHigh = (inputs) => {
-	for (const input of inputs) {
-		if (input.lastSignal == "low") return false;
+const LCM = (arr) => {
+	function gcd(a, b) {
+		if (b === 0) return a;
+		return gcd(b, a % b);
 	}
-	return true;
+
+	let res = arr[0];
+
+	for (let i = 1; i < arr.length; i++) {
+		res = (res * arr[i]) / gcd(res, arr[i]);
+	}
+
+	return res;
 };
